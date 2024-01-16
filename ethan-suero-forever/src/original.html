@@ -1,0 +1,242 @@
+<script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/split-type"></script>
+
+<!-- swiper for locations -->
+<script>
+  $('.slider-main_component').each(function (index) {
+    let loopMode = false;
+    if ($(this).attr('loop-mode') === 'true') {
+      loopMode = true;
+    }
+    let sliderDuration = 500;
+    if ($(this).attr('slider-duration') !== undefined) {
+      sliderDuration = +$(this).attr('slider-duration');
+    }
+    const swiper = new Swiper($(this).find('.swiper')[0], {
+      speed: sliderDuration,
+      loop: loopMode,
+      autoHeight: false,
+      centeredSlides: loopMode,
+      followFinger: true,
+      slideToClickedSlide: false,
+      slidesPerView: 'auto',
+      rewind: false,
+      mousewheel: {
+        forceToAxis: true,
+      },
+      keyboard: {
+        enabled: true,
+        onlyInViewport: true,
+      },
+      slideActiveClass: 'is-active',
+      slideDuplicateActiveClass: 'is-active',
+    });
+  });
+</script>
+
+<!-- cursor interaction for swiper locations -->
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    $('.slider-main_component').each(function () {
+      let componentEl = $(this),
+        triggerEl = componentEl.find('.swiper-slide.is-locations'),
+        targetEl = componentEl.find('.location-hover-list');
+      triggerEl.on('mouseenter', function () {
+        let triggerIndex = $(this).index();
+        targetEl.css('transform', `translateX(${triggerIndex * -100}%)`);
+      });
+    });
+  });
+</script>
+
+<!-- swiper for who section -->
+<script>
+  $('.slider-who_component').each(function (index) {
+    let loopMode = false;
+    if ($(this).attr('loop-mode') === 'true') {
+      loopMode = true;
+    }
+    let sliderDuration = 500;
+    if ($(this).attr('slider-duration') !== undefined) {
+      sliderDuration = +$(this).attr('slider-duration');
+    }
+    const swiper = new Swiper($(this).find('.swiper')[0], {
+      speed: sliderDuration,
+      loop: loopMode,
+      autoHeight: false,
+      centeredSlides: loopMode,
+      followFinger: true,
+      freeMode: false,
+      slideToClickedSlide: false,
+      slidesPerView: 1,
+      rewind: false,
+      mousewheel: {
+        forceToAxis: true,
+      },
+      keyboard: {
+        enabled: true,
+        onlyInViewport: true,
+      },
+      pagination: {
+        el: $(this).find('.swiper-bullet-wrapper')[0],
+        bulletActiveClass: 'is-active',
+        bulletClass: 'swiper-bullet',
+        bulletElement: 'button',
+        clickable: true,
+      },
+    });
+  });
+</script>
+
+<script>
+  $('.who_component').each(function (index) {
+    const swiper1 = new Swiper($(this).find('.swiper.is-who1')[0], {
+      slidesPerView: 1,
+      effect: 'slide',
+    });
+
+    const swiper2 = new Swiper($(this).find('.swiper.is-who2')[0], {
+      slidesPerView: 1,
+      effect: 'slide',
+      pagination: {
+        el: $(this).find('.swiper-bullet-wrapper')[0],
+        bulletActiveClass: 'is-active',
+        bulletClass: 'swiper-bullet',
+        bulletElement: 'div',
+        clickable: true,
+      },
+    });
+
+    swiper1.controller.control = swiper2;
+    swiper2.controller.control = swiper1;
+  });
+</script>
+
+<!-- Auto numbers for client, office and legal sections -->
+<script>
+  function enumerateListItems() {
+    setTimeout(function () {
+      $('.client-col-list, .swiper-wrapper.is-locations, .legal-col-list').each(function () {
+        let childNumbers = $(this).find('.client-number, .location-number, .legal-number');
+        childNumbers.each(function (index) {
+          let number = index + 1;
+          if (number < 10) number = '0' + number;
+          $(this).text(number);
+        });
+      });
+    }, 100);
+  }
+  enumerateListItems();
+  $('.w-pagination-next').on('click', enumerateListItems);
+</script>
+
+<!-- Script for stagger text -->
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    // Split text into spans
+    let typeSplit = new SplitType('[text-split]', {
+      types: 'words, chars',
+      tagName: 'span',
+    });
+
+    // Link timelines to scroll position
+    function createScrollTrigger(triggerElement, timeline) {
+      // Reset tl when scroll out of view past bottom of screen
+      ScrollTrigger.create({
+        trigger: triggerElement,
+        start: 'top bottom',
+        onLeaveBack: () => {
+          timeline.progress(0);
+          timeline.pause();
+        },
+      });
+      // Play tl when scrolled into view (60% from top of screen)
+      ScrollTrigger.create({
+        trigger: triggerElement,
+        start: 'top 80%',
+        onEnter: () => timeline.play(),
+      });
+    }
+
+    $('[letters-slide-up]').each(function (index) {
+      let tl = gsap.timeline({ paused: true });
+      tl.from($(this).find('.char'), {
+        yPercent: 100,
+        duration: 0.6,
+        ease: 'back.out',
+        stagger: { amount: 0.6 },
+      });
+      createScrollTrigger($(this), tl);
+    });
+
+    // Avoid flash of unstyled content
+    gsap.set('[text-split]', { opacity: 1 });
+  });
+
+  // Page name copy from link
+  $('.nav_link').on('click', function () {
+    let linkText = $(this).text();
+    $('.transition_text-block').text(linkText);
+  });
+</script>
+
+<script>
+  //Applies Page Transition from 991px
+  function checkBreakpoint(x) {
+    if (x.matches) {
+      // Page transition
+      let transitionTrigger = $('.transition_trigger');
+      let introDurationMS = 1700;
+      let exitDurationMS = 1700;
+      let excludedClass = 'no-transition';
+
+      // On Page Load
+      if (transitionTrigger.length > 0) {
+        transitionTrigger.click();
+        $('body').addClass('no-scroll-transition');
+        setTimeout(() => {
+          $('body').removeClass('no-scroll-transition');
+        }, introDurationMS);
+      }
+      // On Link Click
+      $('a').on('click', function (e) {
+        if (
+          $(this).prop('hostname') == window.location.host &&
+          $(this).attr('href').indexOf('#') === -1 &&
+          !$(this).hasClass(excludedClass) &&
+          $(this).attr('target') !== '_blank' &&
+          transitionTrigger.length > 0
+        ) {
+          e.preventDefault();
+          $('body').addClass('no-scroll-transition');
+          let transitionURL = $(this).attr('href');
+          transitionTrigger.click();
+          setTimeout(function () {
+            window.location = transitionURL;
+          }, exitDurationMS);
+        }
+      });
+      // On Back Button Tap
+      window.onpageshow = function (event) {
+        if (event.persisted) {
+          window.location.reload();
+        }
+      };
+      // Hide Transition on Window Width Resize
+      setTimeout(() => {
+        $(window).on('resize', function () {
+          setTimeout(() => {
+            $('.transition_component').css('display', 'none');
+          }, 50);
+        });
+      }, introDurationMS);
+    } else {
+      $('.transition_component').css('display', 'none');
+    }
+  }
+  const matchMediaDesktop = window.matchMedia('(min-width: 991px)');
+  checkBreakpoint(matchMediaDesktop);
+  matchMediaDesktop.addListener(checkBreakpoint);
+</script>

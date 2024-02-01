@@ -15,6 +15,11 @@ export const who = () => {
     // remove the 'is-first' class from all but the first component
     if (index !== 0) component.classList.remove("is-first");
 
+    // get the desired duration of the slider
+    const duration = component.dataset.duration
+      ? parseInt(component.dataset.duration)
+      : 2000;
+
     // get the targets
     const targetLeft = queryElement<HTMLDivElement>(
       '[data-gallery-target="left"]',
@@ -27,9 +32,6 @@ export const who = () => {
 
     // get the slug of the relevant page and retrieve the galleries
     const { slug } = component.dataset;
-    // $(targetLeft).load(`/who/${slug} #gallery-left`);
-    // $(targetRight).load(`/who/${slug} #gallery-right`);
-
     let loadLeft = $.Deferred();
     let loadRight = $.Deferred();
 
@@ -41,15 +43,15 @@ export const who = () => {
       loadRight.resolve();
     });
 
+    // Callback function to run after both loads complete
     $.when(loadLeft, loadRight).done(function () {
-      // Callback function to run after both loads complete
-      console.log("Both loads are complete");
-
       // get the wrappers and initialize the swipers
       const wrappers = queryElements<HTMLDivElement>(
         ".slider-who_component",
         component
       );
+
+      console.log(wrappers);
 
       const swipers = wrappers.map((wrapper) => {
         const slider = queryElement<HTMLDivElement>(".swiper", wrapper);
@@ -57,12 +59,31 @@ export const who = () => {
           ".swiper-bullet-wrapper",
           wrapper
         );
-        const options = customPagination
+
+        const bulletTemplate = queryElement<HTMLDivElement>(
+          '[data-bullet="template"]',
+          wrapper
+        );
+
+        const options = bulletTemplate
           ? {
               ...defaultOptions,
+              autoplay: {
+                delay: duration,
+              },
               pagination: {
                 el: customPagination,
-                bulletClass: "swiper-bullet",
+                renderBullet: function (index: number, className: string) {
+                  const bulletClone = bulletTemplate.cloneNode(
+                    true
+                  ) as HTMLDivElement;
+                  bulletClone.classList.add(className);
+                  const bulletAsString = bulletClone.outerHTML;
+                  console.log(index);
+                  console.log(className);
+                  return bulletAsString;
+                },
+                bulletClass: "bullet_wrapper",
                 bulletActiveClass: "is-active",
                 bulletElement: "div",
                 clickable: true,

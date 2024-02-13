@@ -78,10 +78,7 @@ export const who = () => {
                     true
                   ) as HTMLDivElement;
                   bulletClone.classList.add(className);
-                  const bulletAsString = bulletClone.outerHTML;
-                  console.log(index);
-                  console.log(className);
-                  return bulletAsString;
+                  return bulletClone.outerHTML;
                 },
                 bulletClass: "bullet_wrapper",
                 bulletActiveClass: "is-active",

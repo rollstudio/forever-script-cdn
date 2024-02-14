@@ -29,13 +29,25 @@ export const staggerText = () => {
     });
   }
 
-  $("[letters-slide-up]").each(function (index) {
-    const tl = gsap.timeline({ paused: true });
-    tl.from($(this).find(".char"), {
+  // $("[letters-slide-up]").each(function (index) {
+  //   const tl = gsap.timeline({ paused: true });
+  //   tl.from($(this).find(".char"), {
+  //     yPercent: 100,
+  //     duration: 0.6,
+  //     ease: "back.out",
+  //     stagger: { amount: 0.6 },
+  //   });
+  //   createScrollTrigger($(this), tl);
+  // });
+
+  $("[words-slide-up]").each(function (index) {
+    let tl = gsap.timeline({ paused: true });
+    tl.from($(this).find(".word"), {
+      opacity: 0,
       yPercent: 100,
-      duration: 0.6,
-      ease: "back.out",
-      stagger: { amount: 0.6 },
+      duration: 0.5,
+      ease: "back.out(2)",
+      stagger: { amount: 0.5 },
     });
     createScrollTrigger($(this), tl);
   });

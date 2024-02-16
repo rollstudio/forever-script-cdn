@@ -29,27 +29,24 @@ export const staggerText = () => {
     });
   }
 
+  const staggerDefaults = {
+    yPercent: 100,
+    duration: 0.5,
+    ease: "Power2.easeOut",
+    stagger: { amount: 0.5 },
+  };
+
   $("[letters-slide-up]").each(function (index) {
-    console.log($(this));
     const tl = gsap.timeline({ paused: true });
-    tl.from($(this).find(".char"), {
-      yPercent: 100,
-      duration: 0.6,
-      ease: "Power2.easeOut",
-      stagger: { amount: 0.6 },
-    });
+    tl.from($(this).find(".char"), staggerDefaults);
     createScrollTrigger($(this), tl);
   });
 
   $("[words-slide-up]").each(function (index) {
-    console.log($(this));
     let tl = gsap.timeline({ paused: true });
     tl.from($(this).find(".word"), {
+      ...staggerDefaults,
       opacity: 0,
-      yPercent: 100,
-      duration: 0.5,
-      ease: "Power2.easeOut",
-      stagger: { amount: 0.5 },
     });
     createScrollTrigger($(this), tl);
   });

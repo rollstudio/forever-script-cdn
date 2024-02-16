@@ -29,24 +29,26 @@ export const staggerText = () => {
     });
   }
 
-  // $("[letters-slide-up]").each(function (index) {
-  //   const tl = gsap.timeline({ paused: true });
-  //   tl.from($(this).find(".char"), {
-  //     yPercent: 100,
-  //     duration: 0.6,
-  //     ease: "back.out",
-  //     stagger: { amount: 0.6 },
-  //   });
-  //   createScrollTrigger($(this), tl);
-  // });
+  $("[letters-slide-up]").each(function (index) {
+    console.log($(this));
+    const tl = gsap.timeline({ paused: true });
+    tl.from($(this).find(".char"), {
+      yPercent: 100,
+      duration: 0.6,
+      ease: "Power2.easeOut",
+      stagger: { amount: 0.6 },
+    });
+    createScrollTrigger($(this), tl);
+  });
 
   $("[words-slide-up]").each(function (index) {
+    console.log($(this));
     let tl = gsap.timeline({ paused: true });
     tl.from($(this).find(".word"), {
       opacity: 0,
       yPercent: 100,
       duration: 0.5,
-      ease: "back.out(2)",
+      ease: "Power2.easeOut",
       stagger: { amount: 0.5 },
     });
     createScrollTrigger($(this), tl);

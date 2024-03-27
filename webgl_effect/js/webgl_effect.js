@@ -30,8 +30,10 @@ function MouseEffect(params) {
  * Init everything
  */
 MouseEffect.prototype.init = function (params) {
+
   this.curtains = new Curtains({
     container: params.webGLCanvasID,
+    watchScroll: false,
   });
 
   this.plane = null;
@@ -100,6 +102,9 @@ MouseEffect.prototype.resize = function () {
   }
 };
 
+
+let interpolate = true;
+
 /*
  * Handle mouse/touch moves and push the positions into an array
  */
@@ -111,7 +116,6 @@ MouseEffect.prototype.handleMovement = function (e) {
 
   // touch event
   if (e.targetTouches) {
-
     this.mouse.position.x =
       e.targetTouches[0].clientX -
       this.planeElement.getBoundingClientRect().left;
@@ -122,56 +126,115 @@ MouseEffect.prototype.handleMovement = function (e) {
 
   // always check that the plane is still here
   if (this.planeElement && this.plane) {
-    var mouseAttributes = {
-      x: this.mouse.position.x * Math.pow(this.params.canvasScale, 2),
-      y: this.mouse.position.y * Math.pow(this.params.canvasScale, 2),
 
-      scale: 0.1,
-      opacity: 1,
-      velocity: {
-        x: 0,
-        y: 0,
-      },
-    };
-
-    // keep tracks of the initial position of the mouse to calculate velocity
-    mouseAttributes.initialPosition = {
-      x: mouseAttributes.x,
-      y: mouseAttributes.y,
-    };
-
-    // handle velocity based on past values
     if (this.mouse.attributes.length > 0) {
-      mouseAttributes.velocity = {
-        x: Math.max(
-          -this.params.canvasScale * 1.25,
-          Math.min(
-            this.params.canvasScale * 1.25,
-            mouseAttributes.initialPosition.x -
-              this.mouse.attributes[this.mouse.attributes.length - 1]
-                .initialPosition.x
-          )
-        ),
-        y: Math.max(
-          -this.params.canvasScale * 1.25,
-          Math.min(
-            this.params.canvasScale * 1.25,
-            mouseAttributes.initialPosition.y -
-              this.mouse.attributes[this.mouse.attributes.length - 1]
-                .initialPosition.y
-          )
-        ),
-      };
-    }
+      const previousX = this.mouse.attributes[this.mouse.attributes.length - 1].initialPosition.x;
+      const previousY = this.mouse.attributes[this.mouse.attributes.length - 1].initialPosition.y;
 
-    // if this is our first mouse move, start drawing again
-    if (this.mouse.attributes.length == 0) {
+      const currentX = this.mouse.position.x;
+      const currentY = this.mouse.position.y;
+
+      if (!interpolate) {
+        var mouseAttributes = {
+          x: currentX * Math.pow(this.params.canvasScale, 2),
+          y: currentY * Math.pow(this.params.canvasScale, 2),
+
+          scale: 0.1,
+          opacity: 1,
+          velocity: {
+            x: 0,
+            y: 0,
+          },
+        };
+        mouseAttributes.initialPosition = {
+          x: currentX,
+          y: currentY,
+        };
+
+        this.mouse.attributes.push(mouseAttributes);
+
+
+      } else {
+
+        const numInterpolations = 4; // Number of intermediate points to interpolate
+        const deltaX = Math.round((currentX - previousX) / numInterpolations);
+        const deltaY = Math.round((currentY - previousY) / numInterpolations);
+
+        for (let i = numInterpolations; i >= 0; i--) {
+          const interpolatedX = (currentX - deltaX * i);
+          const interpolatedY = (currentY - deltaY * i);
+
+          var mouseAttributes = {
+            x: interpolatedX * Math.pow(this.params.canvasScale, 2),
+            y: interpolatedY * Math.pow(this.params.canvasScale, 2),
+
+            scale: 0.1,
+            opacity: 1,
+            velocity: {
+              x: 0,
+              y: 0,
+            },
+          };
+
+          const alreadyExists = this.mouse.attributes.some(attr => attr.initialPosition.x === interpolatedX && attr.initialPosition.y === interpolatedY);
+          if (alreadyExists) {
+            continue;
+          }
+
+          // keep tracks of the initial position of the mouse to calculate velocity
+          mouseAttributes.initialPosition = {
+            x: interpolatedX,
+            y: interpolatedY,
+          };
+
+          // handle velocity based on past values
+          if (i < numInterpolations) {
+            // Skip velocity calculation for the last interpolated point
+            mouseAttributes.velocity = {
+              x: Math.max(
+                -this.params.canvasScale * 1.25,
+                Math.min(
+                  this.params.canvasScale * 1.25,
+                  mouseAttributes.initialPosition.x -
+                  this.mouse.attributes[this.mouse.attributes.length - 1]
+                    .initialPosition.x
+                )
+              ),
+              y: Math.max(
+                -this.params.canvasScale * 1.25,
+                Math.min(
+                  this.params.canvasScale * 1.25,
+                  mouseAttributes.initialPosition.y -
+                  this.mouse.attributes[this.mouse.attributes.length - 1]
+                    .initialPosition.y
+                )
+              ),
+            };
+          }
+
+          // push our coords to our mouse coords array
+          this.mouse.attributes.push(mouseAttributes);
+        }
+      }
+
+    } else {
+      // If this is the first mouse move
       console.log("enable drawing");
       this.curtains.enableDrawing();
+
+      // Create mouse attributes for the initial position
+      var initialMouseAttributes = {
+        x: this.mouse.position.x * Math.pow(this.params.canvasScale, 2),
+        y: this.mouse.position.y * Math.pow(this.params.canvasScale, 2),
+        scale: 0.1,
+        opacity: 1,
+        velocity: { x: 0, y: 0 },
+        initialPosition: { x: this.mouse.position.x, y: this.mouse.position.y }
+      };
+      this.mouse.attributes.push(initialMouseAttributes);
     }
 
-    // push our coords to our mouse coords array
-    this.mouse.attributes.push(mouseAttributes);
+    interpolate = true;
 
     // convert our mouse/touch position to coordinates relative to the vertices of the plane
     var mouseCoords = this.plane.mouseToPlaneCoords(
@@ -232,7 +295,7 @@ MouseEffect.prototype.drawGradientCircle = function (
  */
 MouseEffect.prototype.animateCanvas = function () {
   // here we will handle our canvas texture animation
-  var pointerSize = 4; 
+  var pointerSize = 4;
 
   // clear scene
   this.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -274,6 +337,18 @@ MouseEffect.prototype.handlePlane = function () {
         false
       );
 
+      document.body.addEventListener(
+        "touchstart",
+        () => {
+          if (self.mouse.attributes.length > 0) {
+            interpolate = false;
+          }
+          else {
+            interpolate = true;
+          }
+        }
+      );
+
       // for performance purpose, disable the drawing for now
       self.curtains.disableDrawing();
       // render the first frame only to display the picture
@@ -284,11 +359,11 @@ MouseEffect.prototype.handlePlane = function () {
         // decrease opacity
         self.mouse.attributes[i].opacity -= self.params.opacitySpeed;
 
-        // apply velocity
-        self.mouse.attributes[i].x +=
-          self.mouse.attributes[i].velocity.x * self.params.velocityStrength;
-        self.mouse.attributes[i].y +=
-          self.mouse.attributes[i].velocity.y * self.params.velocityStrength;
+        // // apply velocity
+        // self.mouse.attributes[i].x +=
+        //   self.mouse.attributes[i].velocity.x * self.params.velocityStrength;
+        // self.mouse.attributes[i].y +=
+        //   self.mouse.attributes[i].velocity.y * self.params.velocityStrength;
 
         // change scale
         if (self.mouse.attributes[i].opacity >= 0.5) {
@@ -367,7 +442,7 @@ MouseEffect.prototype.addPlane = function (vertex, fragment) {
   }
 };
 
-function hideElement(element){
+function hideElement(element) {
   /* 
    * Helper function to remove element and the space it reserves
    */
@@ -375,7 +450,7 @@ function hideElement(element){
   element.style.display = 'none';
 }
 
-function showElement(element){
+function showElement(element) {
   /* 
    * Helper function to (re-)add element and take up tha space it should
    */
@@ -383,7 +458,8 @@ function showElement(element){
   element.style.display = 'block';
 }
 
-window.onload = function () {
+
+function initElementsStyle() {
 
   // Avoid changing elements' style initilization in css file
   document.getElementById('forever_section').style.backgroundColor = '#f5f5f5';
@@ -392,17 +468,19 @@ window.onload = function () {
 
   const frontImage = document.getElementById('plane').getElementsByTagName('img')[0];
   let backgroundTexture = document.getElementById('webgl-video');
-  if (backgroundTexture){
-    console.log('webglBackgroudnVide', backgroundTexture)
+  if (backgroundTexture) {
+    console.log('webglBackgroudnVideo', backgroundTexture)
     // set the webgl effect video to the reel video of the website
-    var video_src = document.getElementById('svg_bg_video').getAttribute('data-video-urls').split(',')[0];
-    backgroundTexture.src = video_src; 
-    // wait for the video to be ready before we start the effect
-    backgroundTexture.addEventListener("canplay", StartEffect);   
-  }else {
+    const video_src = document.getElementById('svg_bg_video_source').getAttribute('data-video-urls').split(',')[0];
+    backgroundTexture.src = video_src;
+    backgroundTexture.addEventListener("canplay", StartEffect);
+  } else {
+    console.log('no video element?', backgroundTexture);
     backgroundTexture = document.getElementById('plane').getElementsByTagName('img')[1];
+    console.log('scrollY inside o nLoad')
     StartEffect();
   }
+
 
   const cssFrontImageStyle = `
     width: 100vw;
@@ -426,29 +504,55 @@ window.onload = function () {
 
   frontImage.style.cssText = cssFrontImageStyle;
   backgroundTexture.style.cssText = cssbackgroundImageStyle;
+}
+
+window.onload = function () {
+
+  if (window.scrollY !== 0) {
+    return null;
+  }
+
+  initElementsStyle();
 };
 
 // start the effect
 function StartEffect() {
-  document.getElementById('webgl-video')?.removeEventListener("canplay", StartEffect); 
+  document.getElementById('webgl-video')?.removeEventListener("canplay", StartEffect);
 
   // load shaders and start effect
   ShaderLoader(
-    "https://cdn.jsdelivr.net/gh/rollstudio/forever-script-cdn@feature/logo-webgl-effect/webgl_effect/shaders/vertex.vert",
-    "https://cdn.jsdelivr.net/gh/rollstudio/forever-script-cdn@feature/logo-webgl-effect/webgl_effect/shaders/fragment.frag",
+    "shaders/vertex.vert",
+    "shaders/fragment.frag",
     function (vertex, fragment) {
       // init everything
       var mouseEffect = new MouseEffect(params);
 
+      let error = false
+
       // if there's an error during the WebGL context creation
       mouseEffect.curtains.onError(function () {
         document.body.classList.add("no-webgl");
+        document.body.classList.add("no-curtains");
+        console.log('curtains error', error)
+        error = true;
       });
 
-      // add the plane to start the effect
-      mouseEffect.addPlane(vertex, fragment);
+      if (!error) {
+        // add the plane to start the effect
+        mouseEffect.addPlane(vertex, fragment);
+        error = false;
       }
-    );
+
+      mouseEffect.curtains.onContextLost(function () {
+        console.log('context lost')
+        mouseEffect.curtains.restoreContext();
+      })
+
+      mouseEffect.curtains.onAfterResize(function () {
+        console.log('after resize here')
+      })
+    }
+  );
 }
 
 function ShaderLoader(vertex_url, fragment_url, onLoad, onProgress, onError) {
@@ -481,7 +585,13 @@ window.addEventListener("scroll", (event) => {
   const webGlCanvasBackground = document.getElementById('forever_section');
   const backgroundVideo = document.getElementById('svg_bg_video');
 
-  // value 5 is symbolically chosen to get the `top of the screen`. Adjust as may seem fit
+  const curtainsCanvas = document.getElementById("webGl-canvas").getElementsByTagName('canvas')[0];
+  const curtainsCanvases = document.getElementById("webGl-canvas").getElementsByTagName('canvas');
+
+  if (curtainsCanvas?.clientWidth !== 0 && curtainsCanvases.length === 0 && window.scrollY <= 0) {
+    initElementsStyle();
+  }
+
   if (window.scrollY <= 0) {
 
     /*
@@ -489,7 +599,7 @@ window.addEventListener("scroll", (event) => {
      * shows the background video (the one zooming in on scroll). So, we hdie it and show it momentarily. 
      * If fullscreen images get provided, remove
      */
-    backgroundVideo.style.visibility="hidden";
+    backgroundVideo.style.visibility = "hidden";
     hideElement(svgElement);
     showElement(webGlCanvas);
     showElement(plane);
@@ -501,7 +611,7 @@ window.addEventListener("scroll", (event) => {
      */
     webGlCanvasBackground.style.backgroundColor = '#f5f5f5';
   } else {
-    backgroundVideo.style.visibility='visible';
+    backgroundVideo.style.visibility = 'visible';
     showElement(svgElement);
     hideElement(webGlCanvas);
     hideElement(plane);

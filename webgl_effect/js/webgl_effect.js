@@ -521,8 +521,10 @@ function StartEffect() {
 
   // load shaders and start effect
   ShaderLoader(
-    "shaders/vertex.vert",
-    "shaders/fragment.frag",
+    "https://cdn.jsdelivr.net/gh/rollstudio/forever-script-cdn@feature/logo-webgl-effect/webgl_effect/shaders/vertex.vert",
+    "https://cdn.jsdelivr.net/gh/rollstudio/forever-script-cdn@feature/logo-webgl-effect/webgl_effect/shaders/fragment.frag",
+    // "shaders/vertex.vert",
+    // "shaders/fragment.frag",
     function (vertex, fragment) {
       // init everything
       var mouseEffect = new MouseEffect(params);
